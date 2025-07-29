@@ -17,16 +17,17 @@ nocol='\033[0m'
 
 export ARCH=arm64
 export SUBARCH=arm64
-export KBUILD_BUILD_USER="octo21" # Build Host
-export KBUILD_BUILD_HOST="lineageOS" # Build Name
-export CROSS_COMPILE="/home/octo/Kernel/aarch64-linux-android/bin/aarch64-unknown-linux-android-"
-export PATH=$PATH:${TOOL_CHAIN_PATH}
+export KBUILD_BUILD_USER="unknownbaka" # Build Host
+export KBUILD_BUILD_HOST="test" # Build Name
+export CROSS_COMPILE="/home/unknownbaka/build_kernel/aarch64-linux-android-4.9/bin/aarch64-linux-android-"
+export PATH=$PATH:${CROSS_COMPILE}
 export out_dir="${kernel_dir}/out/"
 export builddir="${kernel_dir}/Builds"
-export ANY_KERNEL2_DIR="/home/octo/Kernel/octopus_miui_mido/AnyKernel2"
+export ANY_KERNEL2_DIR="${kernel_dir}/AnyKernel2"
 export ZIP_NAME="miui-octopus-${DATE}.zip"
 export IMAGE="${out_dir}arch/arm64/boot/Image.gz-dtb";
-export STRIP_KO="/home/octo/Kernel/aarch64-linux-android/aarch64-unknown-linux-android/bin/strip"
+export LD_LIBRARY_PATH="$CROSS_COMPILE/../lib:$PATH"
+export STRIP_KO="/home/unknownbaka/build_kernel/aarch64-linux-android-4.9/aarch64-linux-android/bin/strip"
 JOBS="-j$(nproc --all)"
 cd $kernel_dir
 
@@ -41,7 +42,7 @@ compile() {
 }
 
 zipit () {
-    if [[ ! -f "${IMAGE}" ]]; then
+    if [ ! -f "${IMAGE}" ]; then
         echo -e "Build failed :P";
         exit 1;
     else
@@ -51,9 +52,8 @@ zipit () {
     cp ${out_dir}arch/arm64/boot/Image.gz-dtb ${ANY_KERNEL2_DIR}/
 
     echo "**** Copying Modules for MIUI ROM ****"
-    find ${out_dir} -name '*.ko' -exec ${STRIP_KO} -g {}  \;
-    find ${out_dir} -name '*.ko' -exec cp {} ${ANY_KERNEL2_DIR}/modules/system/lib/modules/ \; 
-    cp ${ANY_KERNEL2_DIR}/modules/system/lib/modules/wlan.ko ${ANY_KERNEL2_DIR}/modules/system/lib/modules/pronto/pronto_wlan.ko
+    ${STRIP_KO} -g ${out_dir}/drivers/staging/prima/wlan.ko
+    cp ${out_dir}/drivers/staging/prima/wlan.ko ${ANY_KERNEL2_DIR}/modules/system/lib/modules/pronto/pronto_wlan.ko
     cd ${ANY_KERNEL2_DIR}/
 
     echo "**** Zipping ****"
