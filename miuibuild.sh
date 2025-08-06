@@ -53,18 +53,22 @@ zipit () {
 
     echo "**** Copying Modules for MIUI ROM ****"
     ${STRIP_KO} -g ${out_dir}/drivers/staging/prima/wlan.ko
+    mkdir -p ${ANY_KERNEL2_DIR}/modules/system/lib/modules/pronto
     cp ${out_dir}/drivers/staging/prima/wlan.ko ${ANY_KERNEL2_DIR}/modules/system/lib/modules/pronto/pronto_wlan.ko
     cd ${ANY_KERNEL2_DIR}/
 
     echo "**** Zipping ****"
     zip -r9 ${ZIP_NAME} * -x README ${ZIP_NAME}
-    rm -rf ${kernel_dir}/build/${ZIP_NAME}
-    mv ${ANY_KERNEL2_DIR}/${ZIP_NAME} ${kernel_dir}/build/${ZIP_NAME}
+    mv ${ANY_KERNEL2_DIR}/${ZIP_NAME} ${kernel_dir}/../
+    rm ${ANY_KERNEL2_DIR}/Image.gz-dtb
+    rm -rf ${ANY_KERNEL2_DIR}/modules
 }
 
 make_defconfig
 compile
-zipit
+if [ "$?" == "0" ]; then
+    zipit
+fi
 cd ${kernel_dir}
 
 BUILD_END=$(date +"%s")
