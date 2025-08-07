@@ -1,9 +1,6 @@
 #!/bin/bash
-kernel_dir=$PWD
-export V="$(date +'%d%m-%H%M')"
-export CONFIG_FILE="octopus_defconfig"
 date=`date +"%Y%m%d-%H%M"`
-DATE=`date +"%Y%m%d"`
+DATE=`date +"%Y%m%d%H%M"`
 
 BUILD_START=$(date +"%s")
 # Coloring
@@ -18,60 +15,58 @@ nocol='\033[0m'
 export ARCH=arm64
 export SUBARCH=arm64
 export KBUILD_BUILD_USER="unknownbaka" # Build Host
-export KBUILD_BUILD_HOST="test" # Build Name
-export CROSS_COMPILE="/home/unknownbaka/build_kernel/aarch64-linux-android-4.9/bin/aarch64-linux-android-"
+export KBUILD_BUILD_HOST="Ubuntu" # Build Name
+export CONFIG_FILE="octopus_defconfig"
+export KERNEL_DIR=$(pwd)
+export CROSS_COMPILE="${KERNEL_DIR}/../aarch64-linux-android-4.9/bin/aarch64-linux-android-"
 export PATH=$PATH:${CROSS_COMPILE}
-export out_dir="${kernel_dir}/out/"
-export builddir="${kernel_dir}/Builds"
-export ANY_KERNEL2_DIR="${kernel_dir}/AnyKernel2"
+export OUT_DIR="${KERNEL_DIR}/out/"
+export BUILD_DIR="${KERNEL_DIR}/Builds"
+export ANY_KERNEL_DIR="${KERNEL_DIR}/AnyKernel3"
 export ZIP_NAME="miui-octopus-${DATE}.zip"
-export IMAGE="${out_dir}arch/arm64/boot/Image.gz-dtb";
+export IMAGE="${OUT_DIR}/arch/arm64/boot/Image.gz-dtb";
 export LD_LIBRARY_PATH="$CROSS_COMPILE/../lib:$PATH"
-export STRIP_KO="/home/unknownbaka/build_kernel/aarch64-linux-android-4.9/aarch64-linux-android/bin/strip"
-JOBS="-j$(nproc --all)"
-cd $kernel_dir
+export STRIP_KO="${KERNEL_DIR}/../aarch64-linux-android-4.9/aarch64-linux-android/bin/strip"
 
 make_defconfig() {
-	make O=${out_dir} $CONFIG_FILE
+	make O=${OUT_DIR} $CONFIG_FILE
 }
 
 compile() {
-	make \
-	O=${out_dir} \
-	$JOBS
+    echo "**** Build Start ****"
+	make  O=${OUT_DIR} -j$(nproc --all)
 }
 
 zipit () {
-    if [ ! -f "${IMAGE}" ]; then
-        echo -e "Build failed :P";
-        exit 1;
-    else
-        echo -e "Build Succesful!";
-    fi
     echo "**** Copying Image ****"
-    cp ${out_dir}arch/arm64/boot/Image.gz-dtb ${ANY_KERNEL2_DIR}/
+    cp ${OUT_DIR}arch/arm64/boot/Image.gz-dtb ${ANY_KERNEL_DIR}/
 
     echo "**** Copying Modules for MIUI ROM ****"
-    ${STRIP_KO} -g ${out_dir}/drivers/staging/prima/wlan.ko
-    mkdir -p ${ANY_KERNEL2_DIR}/modules/system/lib/modules/pronto
-    cp ${out_dir}/drivers/staging/prima/wlan.ko ${ANY_KERNEL2_DIR}/modules/system/lib/modules/pronto/pronto_wlan.ko
-    cd ${ANY_KERNEL2_DIR}/
+    ${STRIP_KO} -g ${OUT_DIR}/drivers/staging/prima/wlan.ko
+    mkdir -p ${ANY_KERNEL_DIR}/modules/system/lib/modules/pronto
+    cp ${OUT_DIR}/drivers/staging/prima/wlan.ko ${ANY_KERNEL_DIR}/modules/system/lib/modules/pronto/pronto_wlan.ko
+    cd ${ANY_KERNEL_DIR}/
 
     echo "**** Zipping ****"
-    zip -r9 ${ZIP_NAME} * -x README ${ZIP_NAME}
-    mv ${ANY_KERNEL2_DIR}/${ZIP_NAME} ${kernel_dir}/../
-    rm ${ANY_KERNEL2_DIR}/Image.gz-dtb
-    rm -rf ${ANY_KERNEL2_DIR}/modules
+    make
+    if [ ! -d ${BUILD_DIR} ]; then
+        mkdir ${BUILD_DIR}
+    fi
+    mv ${ANY_KERNEL_DIR}/Kernel.zip ${BUILD_DIR}/${ZIP_NAME}
+    rm ${ANY_KERNEL_DIR}/Image.gz-dtb
+    rm -rf ${ANY_KERNEL_DIR}/modules
 }
 
 make_defconfig
 compile
-if [ "$?" == "0" ]; then
+if [ $? -eq 0 ]; then
     zipit
+else
+    cd ${KERNEL_DIR}
+    exit 1
 fi
-cd ${kernel_dir}
+cd ${KERNEL_DIR}
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
-echo -e "$yellow Build completed in $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds."
-
+echo "$yellow Build completed in $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds."

@@ -99,9 +99,8 @@ all.config
 
 # hmmm
 out/
-build/
-AnyKernel2/
-miuibuild.sh
+Builds/
+AnyKernel3/
 
 # fetched Android config fragments
 android/configs/android-*.cfg
